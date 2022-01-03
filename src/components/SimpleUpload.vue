@@ -27,9 +27,9 @@
 </template>
 
 <script>
-import { ref, watch } from "@vue/runtime-core";
+import { ref } from "@vue/runtime-core";
 import { supabase } from "../supabaseClient";
-// import logo from "./assets/logo.png";
+
 
 export default {
   name: "App",
@@ -37,12 +37,12 @@ export default {
     const avatarUrl = ref(null);
     const uploading = ref(false);
 
-    watch(
-      () => avatarUrl.value,
-      (cur) => {
-        downloadImage(cur);
-      }
-    );
+    // watch(
+    //   () => avatarUrl.value,
+    //   (cur) => {
+    //     downloadImage(cur);
+    //   }
+    // );
 
     /**
      *
@@ -55,13 +55,25 @@ export default {
         avatarUrl.value = "./assets/logo.png";
         return;
       }
-
-      const { data, error } = await supabase.storage
+      /***************get url using createObjectURL ***************/
+      // const { data, error } = await supabase.storage
+      //   .from("avatars")
+      //   .download(path);
+      // if (error) throw error;
+      // console.log(data)
+      // avatarUrl.value = URL.createObjectURL(data);
+      // console.log("avatarUrl",avatarUrl.value)
+       /*************** get url using getPublicUrl from supabase********** */
+        try {
+          const { publicURL, err } =await supabase.storage
         .from("avatars")
-        .download(path);
-      if (error) throw error;
-      console.log(data)
-      avatarUrl.value = URL.createObjectURL(data);
+        .getPublicUrl(path);
+        if (err) throw err;
+        console.log("url",publicURL)
+         avatarUrl.value = publicURL
+        } catch (error) {
+          console.error(error.message)
+        }
     };
 
     async function uploadAvatar(event) {
@@ -86,12 +98,13 @@ export default {
         if (uploadError) {
           throw uploadError;
         }
+    
       } catch (error) {
         alert(error.message);
       } finally {
         uploading.value = false;
         console.log(avatarUrl.value);
-        // downloadImage(avatarUrl.value)
+        downloadImage(avatarUrl.value)
       }
     }
 

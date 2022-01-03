@@ -22,9 +22,11 @@ export default {
     const uploading = ref(false);
 
     const onChange = (event) => {
-      filesArray.value = [...filesArray.value, event.target.files[0]];
+      filesArray.value = [...filesArray.value, ...event.target.files];
 
-      console.log(filesArray.value);
+
+      console.log(event.target.files);
+      console.log(filesArray.value)
     };
 
     const onUpload = async () => {
@@ -53,38 +55,73 @@ export default {
           if (uploadError) {
             throw uploadError;
           }
+          await downloadFiles(filesPath);
         } catch (error) {
           alert(error.message);
         }
       });
       uploading.value = false;
-       downloadFiles() 
+      
     };
 
-    const downloadFiles = async () => {
-      const { data, error } = await supabase.storage
-        .from("avatars")
-        .list("files", {
-          limit: 100,
-          offset: 0,
-          sortBy: { column: "name", order: "asc" },
-        });
-        if (error) {
-            throw error;
-        }
-        
-        console.log("files",data)
-        filesUrls.value = data.map(file => file.name)
-        console.log("filesUrls",filesUrls.value)
+    const downloadFiles = async (filesPath) => {
+      // Todo  find a way to create blob object 
+      //   const { data, error } = await supabase.storage
+      //     .from("avatars")
+      //     .list("files", {
+      //       limit: 100,
+      //       offset: 0,
+      //       sortBy: { column: "name", order: "asc" },
+      //     });
+      //   if (error) {
+      //     throw error;
+      //   }
+
+      //   console.log("files", data);
+      //   filesUrls.value = data.map(
+      //     (file) =>
+      //       new Blob([JSON.stringify(file.metadata, null, 2)], {
+      //         type: file.metadata.mimeType,
+      //       })
+      //   );
+      //   console.log("filesUrls", filesUrls.value);
+
+      /***************get url using createObjectURL ***************/
+      console.log("filesPath",filesPath)
+      filesPath.forEach(async (path,index) => {
+        const { data, error } = await supabase.storage
+          .from("avatars")
+          .download(path);
+        if (error) throw error;
+        console.log(data);
+        //  filesUrls.value = [...filesUrls.value,URL.createObjectURL(data)]
+         filesUrls.value[index] = URL.createObjectURL(data)
+         console.log("filesUrls", filesUrls.value);
+      });
+       /*************** get url using getPublicUrl from supabase********** */
+      //  filesPath.forEach(async (path,index) => {
+      //  try {
+      //    const { publicURL, error } =await supabase.storage
+      //   .from("avatars")
+      //   .getPublicUrl(path);
+      //   if (error) throw error;
+      //    filesUrls.value[index] =publicURL
+      //    console.log("filesUrls", filesUrls.value);
+      //  } catch (error) {
+      //    console.error(error.message)
+      //  }
+      // });
+
     };
 
-    console.log("filesUrls",filesUrls.value)
+    
 
+    console.log("filesUrls", filesUrls.value);
 
     return {
       onChange,
       onUpload,
-      downloadFiles
+      downloadFiles,
     };
   },
 };
